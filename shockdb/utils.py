@@ -9,8 +9,13 @@ from pickle import DEFAULT_PROTOCOL, HIGHEST_PROTOCOL, loads, dumps
 import zstandard as zstd
 import pathlib
 
+#######################################################
+### Parameters
 
 
+
+#######################################################
+### Functions
 
 
 def remove_db(file_path: str) -> None:
