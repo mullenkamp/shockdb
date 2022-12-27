@@ -5,7 +5,7 @@ Introduction
 ------------
 ShockDB uses `LMDB <http://www.lmdb.tech>`_ as the backend database, `python-lmdb <https://lmdb.readthedocs.io>`_ as the python bindings to the lmdb C library, and `lmdbm <https://github.com/Dobatymo/lmdb-python-dbm>`_ as a template to create a python key-value database in the style of `dbm <https://docs.python.org/3/library/dbm.html>`_ and `shelve <https://docs.python.org/3/library/shelve.html>`_. As such, the API uses all of the same python dictionary methods python programmers are used to.
 
-Although lmdb and the associated low-level python bindings have a lot advanced functionality, ShockDB was designed to be a simple fast single key-value database. Many default settings were made for this use case in mind. I've added several extra options in the open function for more advanced users.
+Although lmdb and the associated low-level python bindings have a lot of advanced functionality, ShockDB was designed to be a simple fast single key-value database. Many default settings were made for this use case in mind. I've added several extra options in the open function for more advanced users.
 
 Installation
 ------------
