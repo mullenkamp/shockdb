@@ -333,70 +333,147 @@ def test_write_bulk_shelve():
 
 
 def test_write_bulk_shock():
-    with open('/home/mike/cache/test.shock', 'n', lock=False) as db:
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor=None, serializer=None) as db:
         for i in range(10000):
-            db['data'+str(i)] = pickle.dumps(np.arange(0, 100))
+            db['data'+str(i)] = pickle.dumps(np.arange(0, 1000))
 
 
 def test_write_bulk_shock():
-    with open('/home/mike/cache/test_big2.shock', 'n') as db:
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor=None, serializer='pickle') as db:
+        for i in range(10000):
+            db['data'+str(i)] = np.arange(0, 1000)
+
+
+def test_write_bulk_shock():
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor=None, serializer='orjson') as db:
+        for i in range(10000):
+            db['data'+str(i)] = np.arange(0, 1000)
+
+
+def test_write_bulk_shock():
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor='zstd', serializer='orjson') as db:
+        for i in range(10000):
+            db['data'+str(i)] = np.arange(0, 1000)
+
+
+def test_write_bulk_shock():
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor='zstd', serializer='pickle') as db:
+        for i in range(10000):
+            db['data'+str(i)] = np.arange(0, 1000)
+
+
+
+def test_write_bulk_shock():
+    with open('/home/mike/cache/test_big2.shock', 'n', compressor=None) as db:
         for i in range(200):
             db['data'+str(i)] = results1
 
 
 db = open('/home/mike/cache/test_big2.shock', 'r')
 
-with open('/home/mike/cache/test1.shock', 'r') as db:
-    assert len(db) == 100
-    for i in range(100):
-        r1 = db['data'+str(i)]
+
+def test_read_bulk_shock():
+    with open('/home/mike/cache/test.shock', 'r', compressor='zstd', serializer='orjson') as db:
+        for i in range(10000):
+            r1 = db['data'+str(i)]
 
 
 
 
 
 
+value = pickle.dumps(np.arange(0, 1000))
+def test_write_shock_none_none():
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor=None, serializer=None) as db:
+        for i in range(10000):
+            db['data'+str(i)] = value
+
+value = np.arange(0, 1000)
+def test_write_shock_none_pickle():
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor=None, serializer='pickle') as db:
+        for i in range(10000):
+            db['data'+str(i)] = value
 
 
+value = np.arange(0, 1000).tolist()
+def test_write_shock_none_json():
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor=None, serializer='json') as db:
+        for i in range(10000):
+            db['data'+str(i)] = value
+
+value = np.arange(0, 1000)
+def test_write_shock_none_orjson():
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor=None, serializer='orjson') as db:
+        for i in range(10000):
+            db['data'+str(i)] = value
+
+value = pickle.dumps(np.arange(0, 1000))
+def test_write_shock_zstd_none():
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor='zstd', serializer=None) as db:
+        for i in range(10000):
+            db['data'+str(i)] = value
+
+value = np.arange(0, 1000)
+def test_write_shock_zstd_pickle():
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor='zstd', serializer='pickle') as db:
+        for i in range(10000):
+            db['data'+str(i)] = value
+
+value = np.arange(0, 1000).tolist()
+def test_write_shock_zstd_json():
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor='zstd', serializer='json') as db:
+        for i in range(10000):
+            db['data'+str(i)] = value
+
+value = np.arange(0, 1000)
+def test_write_shock_zstd_orjson():
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor='zstd', serializer='orjson') as db:
+        for i in range(10000):
+            db['data'+str(i)] = value
+
+## Read
+def test_read_shock_none_none():
+    with open('/home/mike/cache/test.shock', 'r', compressor=None, serializer=None) as db:
+        for i in range(10000):
+            r1 = db['data'+str(i)]
+
+def test_read_shock_none_pickle():
+    with open('/home/mike/cache/test.shock', 'r', compressor=None, serializer='pickle') as db:
+        for i in range(10000):
+            r1 = db['data'+str(i)]
+
+def test_read_shock_none_json():
+    with open('/home/mike/cache/test.shock', 'r', compressor=None, serializer='json') as db:
+        for i in range(10000):
+            r1 = db['data'+str(i)]
+
+def test_read_shock_none_orjson():
+    with open('/home/mike/cache/test.shock', 'r', compressor=None, serializer='orjson') as db:
+        for i in range(10000):
+            r1 = db['data'+str(i)]
+
+def test_read_shock_zstd_none():
+    with open('/home/mike/cache/test.shock', 'r', compressor='zstd', serializer=None) as db:
+        for i in range(10000):
+            r1 = db['data'+str(i)]
+
+def test_read_shock_zstd_pickle():
+    with open('/home/mike/cache/test.shock', 'r', compressor='zstd', serializer='pickle') as db:
+        for i in range(10000):
+            r1 = db['data'+str(i)]
+
+def test_read_shock_zstd_json():
+    with open('/home/mike/cache/test.shock', 'r', compressor='zstd', serializer='json') as db:
+        for i in range(10000):
+            r1 = db['data'+str(i)]
+
+def test_read_shock_zstd_orjson():
+    with open('/home/mike/cache/test.shock', 'r', compressor='zstd', serializer='orjson') as db:
+        for i in range(10000):
+            r1 = db['data'+str(i)]
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+db = open('/home/mike/cache/test.shock', 'w', lock=False)
 
 
 

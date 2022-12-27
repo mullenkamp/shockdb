@@ -7,10 +7,10 @@ import os
 here = os.path.abspath(os.path.dirname(__file__))
 
 # General parameters
-name = 'shelflet'
-main_package = 'shelflet'
-version = '0.1.2'
-descrip = 'The Python shelve module except with compression to make smaller shelves!'
+name = 'shockdb'
+main_package = 'shockdb'
+version = '0.0.4'
+descrip = 'A python wrapper on lmdb for a simple dbm key-value database'
 
 # The below code is for readthedocs. To have sphinx/readthedocs interact with
 # the contained package, readthedocs needs to build the package. But the dependencies
@@ -18,7 +18,7 @@ descrip = 'The Python shelve module except with compression to make smaller shel
 if os.environ.get('READTHEDOCS', False) == 'True':
     INSTALL_REQUIRES = []
 else:
-    INSTALL_REQUIRES = ['zstandard']
+    INSTALL_REQUIRES = ['lmdb']
 
 # Get the long description from the README file
 with open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
@@ -78,7 +78,7 @@ setup(
     #
     # This field corresponds to the "Home-Page" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#home-page-optional
-    url='https://github.com/mullenkamp/shelflet',  # Optional
+    url='https://github.com/mullenkamp/shockdb',  # Optional
 
     # This should be your name or the name of the organization which owns the
     # project.
@@ -109,13 +109,16 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Operating System :: OS Independent',
+        'Topic :: Database'
     ],
 
     # This field adds keywords for your project which will appear on the
     # project page. What does your project relate to?
     #
     # Note that this is a string of words separated by whitespace, not a list.
-    keywords='shelve',  # Optional
+    keywords='shelve dbm lmdb redis',  # Optional
 
     # You can just specify package directories manually here if your project is
     # simple. Or you can use find_packages().
@@ -144,19 +147,19 @@ setup(
     #
     # Similar to `install_requires` above, these must be valid existing
     # projects.
-    #extras_require={  # Optional
-    #    'dev': ['check-manifest'],
-    #    'test': ['coverage'],
-    #},
+    extras_require={  # Optional
+       'dev': ['zstandard', 'lz4', 'orjson'],
+       'test': ['pytest'],
+    },
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.
     #
     # If using Python 2.6 or earlier, then these have to be included in
     # MANIFEST.in as well.
-    # package_data={  # Optional
-    #     main_package: ['*.yml', datasets + '/*.h5'],
-    # },
+    package_data={  # Optional
+        main_package: ['*.yml', datasets + '/*.h5'],
+    },
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:

@@ -1,5 +1,5 @@
-{% set name = "hilltop-py" %}
-{% set version = "2.2.0" %}
+{% set name = "shockdb" %}
+{% set version = "0.0.4" %}
 # {% set sha256 = "72a156e328247c91cb7f5440ffa98069c0090892f8d9d07fd57e36c0611a0403" %}
 
 # sha256 is the prefered checksum -- you can get it for a file with:
@@ -32,25 +32,21 @@ build:
 
 requirements:
   build:
-    - python
+    - python >=3.8
     - setuptools
   run:
-    - python
-    - pandas
-    - pydantic
-    - orjson
-    - requests
+    - python >=3.8
+    - python-lmdb
 
 test:
   imports:
-    - hilltoppy
+    - shockdb
 
 about:
-  home: https://github.com/mullenkamp/hilltop-py
+  home: https://github.com/mullenkamp/shockdb
   license: Apache License 2.0
   license_family: APACHE
-  summary: Functions to extract data from Hilltop
-  description: "Repository for Hilltop Python tools\r\n=============================================================\r\n\r\nThis git repository contains the Hilltop Python tools and associated documentation.\r\
-    \n"
-  doc_url: ''
+  summary: A python wrapper on lmdb for a simple dbm key-value database
+  description: A python wrapper on lmdb for a simple dbm key-value database
+  doc_url: https://github.com/mullenkamp/shockdb
   dev_url: ''

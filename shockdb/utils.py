@@ -6,7 +6,6 @@ Created on Sun Dec 25 21:21:11 2022
 @author: mike
 """
 from pickle import DEFAULT_PROTOCOL, HIGHEST_PROTOCOL, loads, dumps
-import zstandard as zstd
 import pathlib
 
 #######################################################
