@@ -338,7 +338,7 @@ class Shock(MutableMapping):
 
     def close(self) -> None:
         """
-        Close the environment, invalidating non-synced writes.
+        Close the environment. All writes will be synced.
         """
         self.sync()
         self.env.close()
@@ -359,26 +359,35 @@ def open(
     -----------
     file_path : str or pathlib.Path
         It must be a path to a local file location.
+
     flag : str
         Flag associated with how the file is opened according to the dbm style. See below for details.
+
     map_size : int
         Maximum size database may grow to; used to size the memory mapping. If database grows larger than map_size, an exception will be raised and the user must close and reopen Environment. On 64-bit there is no penalty for making this huge (say 1TB). Must be <2GB on 32-bit.
+
     lock : bool
         If False, don’t do any locking. If concurrent access is anticipated, the caller must manage all concurrency itself. For proper operation the caller must enforce single-writer semantics, and must ensure that no readers are using old transactions while a writer is active. The simplest approach is to use an exclusive lock so that no readers may be active at all when a writer begins.
+
     sync : bool
         If False, don’t flush system buffers to disk when committing a transaction. This optimization means a system crash can corrupt the database or lose the last transactions if buffers are not yet flushed to disk.
 
-The risk is governed by how often the system flushes dirty buffers to disk and how often sync() is called. However, if the filesystem preserves write order, transactions exhibit ACI (atomicity, consistency, isolation) properties and only lose D (durability). I.e. database integrity is maintained, but a system crash may undo the final transactions.
+        The risk is governed by how often the system flushes dirty buffers to disk and how often sync() is called. However, if the filesystem preserves write order, transactions exhibit ACI (atomicity, consistency, isolation) properties and only lose D (durability). I.e. database integrity is maintained, but a system crash may undo the final transactions.
+
     max_readers : int
         Maximum number of simultaneous read transactions. Can only be set by the first process to open an environment, as it affects the size of the lock file and shared memory area. Attempts to simultaneously start more than this many read transactions will fail.
+
     serializer : str or None
         The serializer to use to convert the input object to bytes. Currently, must be one of pickle, json, orjson, or None. If the objects can be serialized to json, then use orjson. It's super fast and you won't have the pickle issues.
         If None, then the input values must be bytes.
+
     protocol : int
         The pickle protocol to use.
+
     compressor : str or None
         The compressor to use to compress the pickle object before being written. Currently, only zstd is accepted.
         The amount of compression will vary wildly depending on the input object and the serializer used. It's definitely worth doing some testing before using a compressor. Saying that...if you serialize to json, you'll likely get a lot of benefit from a fast compressor.
+
     compress_level : int
         The compression level for the compressor.
 
