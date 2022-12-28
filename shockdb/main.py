@@ -13,6 +13,7 @@ from typing import Any, Generic, Iterator, Union
 import lmdb
 import pickle
 import json
+import pathlib
 
 imports = {}
 try:
@@ -101,9 +102,9 @@ class Lz4:
     def __init__(self, compress_level):
         self.compress_level = compress_level
     def compress(self, obj):
-        return zstd.compress(obj, self.compress_level)
+        return lz4.frame.compress(obj, self.compress_level)
     def decompress(self, obj):
-        return zstd.decompress(obj)
+        return lz4.frame.decompress(obj)
 
 
 #######################################################
@@ -120,52 +121,70 @@ class Shock(MutableMapping):
         if flag == "r":  # Open existing database for reading only (default)
             env = lmdb.open(file_path, map_size=map_size, max_dbs=0, readonly=True, create=False, subdir=False, lock=lock, sync=False, max_readers=max_readers)
             write = False
+            fp_exists = True
         elif flag == "w":  # Open existing database for reading and writing
             env = lmdb.open(file_path, map_size=map_size, max_dbs=0, readonly=False, create=False, subdir=False, lock=lock, sync=sync, max_readers=max_readers)
             write = True
+            fp_exists = True
         elif flag == "c":  # Open database for reading and writing, creating it if it doesn't exist
+            fp = pathlib.Path(file_path)
+            fp_exists = fp.exists()
+
             env = lmdb.open(file_path, map_size=map_size, max_dbs=0, readonly=False, create=True, subdir=False, lock=lock, sync=sync, max_readers=max_readers)
             write = True
         elif flag == "n":  # Always create a new, empty database, open for reading and writing
             utils.remove_db(file_path)
             env = lmdb.open(file_path, map_size=map_size, max_dbs=0, readonly=False, create=True, subdir=False, lock=lock, sync=sync, max_readers=max_readers)
             write = True
+            fp_exists = False
         else:
             raise ValueError("Invalid flag")
 
         self.env = env
         self._write = write
 
-        ## Serializer
-        if serializer is None:
-            self._serializer = None
-        elif serializer == 'pickle':
-            self._serializer = Pickle(protocol)
-        elif serializer == 'json':
-            self._serializer = Json
-        elif serializer == 'orjson':
-            if imports['orjson']:
-                self._serializer = Orjson
-            else:
-                raise ValueError('orjson could not be imported.')
+        ## Load or assign encodings
+        if fp_exists:
+            with env.begin(write=False, buffers=False) as txn:
+                self._serializer = pickle.loads(txn.get(b'00~._serializer'))
+                self._compressor = pickle.loads(txn.get(b'01~._compressor'))
         else:
-            raise ValueError('serializer must be one of pickle, json, or orjson.')
+            ## Serializer
+            if serializer is None:
+                self._serializer = None
+            elif serializer == 'pickle':
+                self._serializer = Pickle(protocol)
+            elif serializer == 'json':
+                self._serializer = Json
+            elif serializer == 'orjson':
+                if imports['orjson']:
+                    self._serializer = Orjson
+                else:
+                    raise ValueError('orjson could not be imported.')
+            else:
+                raise ValueError('serializer must be one of pickle, json, or orjson.')
 
-        ## Compressor
-        if compressor is None:
-            self._compressor = None
-        elif compressor == 'gzip':
-            self._compressor = Gzip(compress_level)
-        elif compressor == 'zstd':
-            if imports['zstd']:
-                self._compressor = Zstd(compress_level)
-            else:
-                raise ValueError('zstd could not be imported.')
-        elif compressor == 'lz4':
-            if imports['lz4']:
-                self._compressor = Lz4(compress_level)
-            else:
-                raise ValueError('lz4 could not be imported.')
+            ## Compressor
+            if compressor is None:
+                self._compressor = None
+            elif compressor == 'gzip':
+                self._compressor = Gzip(compress_level)
+            elif compressor == 'zstd':
+                if imports['zstd']:
+                    self._compressor = Zstd(compress_level)
+                else:
+                    raise ValueError('zstd could not be imported.')
+            elif compressor == 'lz4':
+                if imports['lz4']:
+                    self._compressor = Lz4(compress_level)
+                else:
+                    raise ValueError('lz4 could not be imported.')
+
+            ## Save encodings if new file
+            with env.begin(write=True, buffers=False) as txn:
+                txn.put(b'00~._serializer', pickle.dumps(self._serializer, protocol))
+                txn.put(b'01~._compressor', pickle.dumps(self._compressor, protocol))
+            env.sync()
 
 
     def info(self) -> dict:
@@ -182,7 +201,6 @@ class Shock(MutableMapping):
         """
         Change the map size of the database by a value.
         """
-
         self.env.set_mapsize(value)
 
     def copy(self, file_path, compact=True):
@@ -197,7 +215,6 @@ class Shock(MutableMapping):
             If True, perform compaction while copying: omit free pages and sequentially renumber all pages in output. This option consumes more CPU and runs more slowly than the default, but may produce a smaller output database.
         """
         self.env.copy(file_path, compact=compact)
-
 
     def _pre_key(self, key: str) -> bytes:
 
@@ -257,19 +274,22 @@ class Shock(MutableMapping):
     def keys(self):
 
         with self.env.begin(write=False, buffers=False) as txn:
-            for key in txn.cursor().iternext(keys=True, values=False):
+            cursor = utils.move_cursor(txn)
+            for key in cursor.iternext(keys=True, values=False):
                 yield self._post_key(key)
 
     def items(self):
 
         with self.env.begin(write=False, buffers=False) as txn:
-            for key, value in txn.cursor().iternext(keys=True, values=True):
-                yield (self._post_key(key), self._post_value(value))
+            cursor = utils.move_cursor(txn)
+            for key, value in cursor.iternext(keys=True, values=True):
+                yield self._post_key(key), self._post_value(value)
 
     def values(self):
 
         with self.env.begin(write=False, buffers=False) as txn:
-            for value in txn.cursor().iternext(keys=False, values=True):
+            cursor = utils.move_cursor(txn)
+            for value in cursor.iternext(keys=False, values=True):
                 yield self._post_value(value)
 
     def __contains__(self, key: str) -> bool:
@@ -314,19 +334,14 @@ class Shock(MutableMapping):
             raise ValueError('File is open for read only.')
 
 
-    # The method "drop" should work for this without iterating through all objects
     def clear(self):
         if self._write:
             with self.env.begin(write=True, buffers=False) as txn:
-                for key in txn.cursor().iternext(keys=True, values=False):
+                cursor = utils.move_cursor(txn)
+                for key in cursor.iternext(keys=True, values=False):
                     txn.delete(key)
         else:
             raise ValueError('File is open for read only.')
-        # if self._write:
-        #     with self.env.begin(write=True, buffers=False) as txn:
-        #         txn.drop(db=None, delete=delete)
-        # else:
-        #     raise ValueError('File is open for read only.')
 
 
     def sync(self) -> None:
@@ -353,7 +368,7 @@ class Shock(MutableMapping):
 def open(
     file_path: str, flag: str = "r", map_size: int = 2**40, lock: bool = False, sync: bool = False, max_readers: int = 126, serializer: str = None, protocol: int = 5, compressor: str = None, compress_level: int = 1):
     """
-    Open a persistent dictionary for reading and writing.
+    Open a persistent dictionary for reading and writing. On creation of the file, the encodings (serializer and compressor) will be written to the file. Any reads and new writes do not need to be opened with the encoding parameters. Currently, ShockDB uses pickle to serialize the encodings to the file.
 
     Parameters
     -----------

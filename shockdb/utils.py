@@ -16,6 +16,16 @@ import pathlib
 #######################################################
 ### Functions
 
+def move_cursor(txn):
+    """
+    Move the cursor past the encodings.
+    """
+    cursor = txn.cursor()
+    cursor.set_key(b'01~._compressor')
+    cursor.next()
+
+    return cursor
+
 
 def remove_db(file_path: str) -> None:
 

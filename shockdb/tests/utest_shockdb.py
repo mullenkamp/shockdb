@@ -7,7 +7,6 @@ Created on Mon Dec 26 18:23:08 2022
 """
 from tethysts import Tethys
 import io
-from lmdbm import Lmdb
 from sqlitedict import SqliteDict
 import shelflet
 import h5py
@@ -419,6 +418,12 @@ def test_write_shock_zstd_pickle():
         for i in range(10000):
             db['data'+str(i)] = value
 
+value = np.arange(0, 1000)
+def test_write_shock_lz4_pickle():
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor='lz4', serializer='pickle') as db:
+        for i in range(10000):
+            db['data'+str(i)] = value
+
 value = np.arange(0, 1000).tolist()
 def test_write_shock_zstd_json():
     with open('/home/mike/cache/test.shock', 'n', lock=False, compressor='zstd', serializer='json') as db:
@@ -433,7 +438,7 @@ def test_write_shock_zstd_orjson():
 
 ## Read
 def test_read_shock_none_none():
-    with open('/home/mike/cache/test.shock', 'r', compressor=None, serializer=None) as db:
+    with open('/home/mike/cache/test.shock', 'r') as db:
         for i in range(10000):
             r1 = db['data'+str(i)]
 
@@ -462,20 +467,28 @@ def test_read_shock_zstd_pickle():
         for i in range(10000):
             r1 = db['data'+str(i)]
 
+def test_read_shock_lz4_pickle():
+    with open('/home/mike/cache/test.shock', 'r') as db:
+        for i in range(10000):
+            r1 = db['data'+str(i)]
+
 def test_read_shock_zstd_json():
     with open('/home/mike/cache/test.shock', 'r', compressor='zstd', serializer='json') as db:
         for i in range(10000):
             r1 = db['data'+str(i)]
 
 def test_read_shock_zstd_orjson():
-    with open('/home/mike/cache/test.shock', 'r', compressor='zstd', serializer='orjson') as db:
+    with open('/home/mike/cache/test.shock', 'r') as db:
         for i in range(10000):
             r1 = db['data'+str(i)]
 
 
-db = open('/home/mike/cache/test.shock', 'w', lock=False)
+db = open('/home/mike/cache/test.shock', 'r')
 
+for key, value in db.items():
+    print(key)
 
+db = open('/home/mike/cache/test.shock', 'n', lock=False, compressor='zstd', serializer='orjson')
 
 
 
