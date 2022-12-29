@@ -30,9 +30,11 @@ ShockDB also provides several compression options for taking the serialized obje
 
 The defaults in ShockDB have been set to not do serialization and compression as to require the user to make a conscious decision on these options.
 
+Custom user defined serializer and compressor classes can also be passed to the respective parameter names in the open function. Look at the main.py "Serializers and compressors" section for examples.
+
 Usage
 -----
-The docstrings have a lot of info about the classes and methods. Files should be opened with the shockdb.open function. Read the docstrings for the open function for more details.
+The docstrings have a lot of info about the classes and methods. Files should be opened with the shockdb.open function. Read the docstrings of the open function for more details.
 
 Write data
 ~~~~~~~~~~
@@ -48,13 +50,14 @@ Read data
 ~~~~~~~~~
 .. code:: python
 
-  with shockdb.open('test.shock', 'r', serializer='pickle') as db:
+  with shockdb.open('test.shock', 'r') as db:
     test_data = db['test_key']
 
+Notice that you don't need to pass serializer or compressor parameters when reading. ShockDB stores this info on the initial file creation.
 
 Recommendations
 ~~~~~~~~~~~~~~~
-In most cases, the user should use python's context manager "with" when reading and writing data. This will ensure data is properly written and (optionally) locks are released on the file. If the context manager is not used (and the default sync=False), then the user must be sure to run the db.sync() at the end of a series of writes to ensure the data has been fully written to disk. And as with other dbm style APIs, the db.close() must be run to close the file and release locks. MultiThreading is safe for multiple readers and writers, but only multiple readers are safe with MultiProcessing.
+In most cases, the user should use python's context manager "with" when reading and writing data. This will ensure data is properly written and (optionally) locks are released on the file. If the context manager is not used (and the default sync=False), then the user must be sure to run the db.sync() at the end of a series of writes to ensure the data has been fully written to disk. And as with other dbm style APIs, the db.close() must be run to close the file and release locks. MultiThreading is safe for multiple readers and writers, but only multiple readers are safe with MultiProcessing. If MultiThreading operations are expected, then opening a file with lock=True is necessary.
 
 
 Benchmarks

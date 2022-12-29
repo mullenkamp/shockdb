@@ -14,6 +14,7 @@ import lmdb
 import pickle
 import json
 import pathlib
+import inspect
 
 imports = {}
 try:
@@ -113,7 +114,7 @@ class Lz4:
 
 class Shock(MutableMapping):
 
-    def __init__(self, file_path: str, flag: str = "r", map_size: int = 2**40, lock: bool = False, sync: bool = False, max_readers: int = 126, serializer: str = None, protocol: int = 5, compressor: str = None, compress_level: int = 1):
+    def __init__(self, file_path: str, flag: str = "r", map_size: int = 2**40, lock: bool = False, sync: bool = False, max_readers: int = 126, serializer = None, protocol: int = 5, compressor = None, compress_level: int = 1):
         """
 
         """
@@ -161,8 +162,14 @@ class Shock(MutableMapping):
                     self._serializer = Orjson
                 else:
                     raise ValueError('orjson could not be imported.')
+            elif inspect.isclass(serializer):
+                class_methods = dir(serializer)
+                if ('dumps' in class_methods) and ('loads' in class_methods):
+                    self._serializer = serializer
+                else:
+                    raise ValueError('If a class is passed for a serializer, then it must have dumps and loads methods.')
             else:
-                raise ValueError('serializer must be one of pickle, json, or orjson.')
+                raise ValueError('serializer must be one of pickle, json, orjson, or a serializer class with dumps and loads methods.')
 
             ## Compressor
             if compressor is None:
@@ -179,6 +186,14 @@ class Shock(MutableMapping):
                     self._compressor = Lz4(compress_level)
                 else:
                     raise ValueError('lz4 could not be imported.')
+            elif inspect.isclass(compressor):
+                class_methods = dir(compressor)
+                if ('compress' in class_methods) and ('decompress' in class_methods):
+                    self._compressor = compressor(compress_level)
+                else:
+                    raise ValueError('If a class is passed for a compressor, then it must have compress and decompress methods as well as a compress_level parameter in the __init__.')
+            else:
+                raise ValueError('compressor must be one of gzip, zstd, lz4, or a compressor class with compress and decompress methods.')
 
             ## Save encodings if new file
             with env.begin(write=True, buffers=False) as txn:
@@ -366,7 +381,7 @@ class Shock(MutableMapping):
 
 
 def open(
-    file_path: str, flag: str = "r", map_size: int = 2**40, lock: bool = False, sync: bool = False, max_readers: int = 126, serializer: str = None, protocol: int = 5, compressor: str = None, compress_level: int = 1):
+    file_path: str, flag: str = "r", map_size: int = 2**40, lock: bool = False, sync: bool = False, max_readers: int = 126, serializer = None, protocol: int = 5, compressor = None, compress_level: int = 1):
     """
     Open a persistent dictionary for reading and writing. On creation of the file, the encodings (serializer and compressor) will be written to the file. Any reads and new writes do not need to be opened with the encoding parameters. Currently, ShockDB uses pickle to serialize the encodings to the file.
 
@@ -392,16 +407,18 @@ def open(
     max_readers : int
         Maximum number of simultaneous read transactions. Can only be set by the first process to open an environment, as it affects the size of the lock file and shared memory area. Attempts to simultaneously start more than this many read transactions will fail.
 
-    serializer : str or None
+    serializer : str, class, or None
         The serializer to use to convert the input object to bytes. Currently, must be one of pickle, json, orjson, or None. If the objects can be serialized to json, then use orjson. It's super fast and you won't have the pickle issues.
         If None, then the input values must be bytes.
+        A class with dumps and loads methods can also be passed as a custom serializer.
 
     protocol : int
         The pickle protocol to use.
 
-    compressor : str or None
+    compressor : str, class, or None
         The compressor to use to compress the pickle object before being written. Currently, only zstd is accepted.
         The amount of compression will vary wildly depending on the input object and the serializer used. It's definitely worth doing some testing before using a compressor. Saying that...if you serialize to json, you'll likely get a lot of benefit from a fast compressor.
+        A class with compress and decompress methods can also be passed as a custom serializer. The class also needs a compress_level parameter in the __init__.
 
     compress_level : int
         The compression level for the compressor.

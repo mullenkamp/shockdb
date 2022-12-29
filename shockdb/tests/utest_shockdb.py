@@ -491,7 +491,9 @@ for key, value in db.items():
 db = open('/home/mike/cache/test.shock', 'n', lock=False, compressor='zstd', serializer='orjson')
 
 
-
+with open('/home/mike/cache/test.shock', 'n', lock=False, compressor=Zstd, serializer=Orjson) as db:
+    for i in range(10000):
+        db['data'+str(i)] = value
 
 
 
