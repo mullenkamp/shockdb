@@ -18,6 +18,7 @@ import pickle
 import numpy as np
 import lmdb
 import pathlib
+import shockdb
 
 ############################################################
 ### Parameters
@@ -414,7 +415,7 @@ def test_write_shock_zstd_none():
 
 value = np.arange(0, 1000)
 def test_write_shock_zstd_pickle():
-    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor='zstd', serializer='pickle') as db:
+    with shockdb.open('/home/mike/cache/test.shock', 'n', lock=False, compressor='zstd', serializer='pickle') as db:
         for i in range(10000):
             db['data'+str(i)] = value
 
@@ -494,6 +495,52 @@ db = open('/home/mike/cache/test.shock', 'n', lock=False, compressor='zstd', ser
 with open('/home/mike/cache/test.shock', 'n', lock=False, compressor=Zstd, serializer=Orjson) as db:
     for i in range(10000):
         db['data'+str(i)] = value
+
+
+
+
+value = pickle.dumps(np.arange(0, 1000))
+def test_write_shelflet_none_none():
+    with open('/home/mike/cache/test.shelf', 'n', compressor=None, serializer=None) as db:
+        for i in range(10000):
+            db['data'+str(i)] = value
+
+
+value = np.arange(0, 1000)
+def test_write_shelflet_zstd_pickle():
+    with open('/home/mike/cache/test.shelf', 'n', compressor='zstd', serializer='pickle') as db:
+        for i in range(10000):
+            db['data'+str(i)] = value
+
+
+
+def test_read_shelflet_zstd_pickle():
+    with open('/home/mike/cache/test.shelf', 'r') as db:
+        for i in range(10000):
+            r1 = db['data'+str(i)]
+
+
+
+db = open('/home/mike/cache/test.shelf', 'w')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
