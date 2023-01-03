@@ -1,7 +1,7 @@
 ShockDB
 ==================================
 
-*WARNING* The lmdb backend does not seem to work properly in real world tests. Excessive CPU usage and data corruption seems to occur. Do not use this package (and probably not the python-lmdb package either). If you're using linux, then `shelflet <https://github.com/mullenkamp/shelflet>`_ is a good alternative. 
+*WARNING*: The lmdb backend does not seem to work properly in real world tests. Excessive CPU usage and data corruption seems to occur. Do not use this package (and probably not the python-lmdb package either). If you're using linux, then `shelflet <https://github.com/mullenkamp/shelflet>`_ is a good alternative. 
 
 Introduction
 ------------

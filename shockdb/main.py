@@ -41,8 +41,8 @@ except:
 # except:
 #     imports['numpy'] = False
 
-# from . import utils
-import utils
+from . import utils
+# import utils
 
 # logger = logging.getLogger(__name__)
 
