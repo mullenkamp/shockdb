@@ -415,7 +415,7 @@ def test_write_shock_zstd_none():
 
 value = np.arange(0, 1000)
 def test_write_shock_zstd_pickle():
-    with shockdb.open('/home/mike/cache/test.shock', 'n', lock=False, compressor='zstd', serializer='pickle') as db:
+    with open('/home/mike/cache/test.shock', 'n', lock=False, compressor='zstd', serializer='pickle') as db:
         for i in range(10000):
             db['data'+str(i)] = value
 
@@ -464,7 +464,7 @@ def test_read_shock_zstd_none():
             r1 = db['data'+str(i)]
 
 def test_read_shock_zstd_pickle():
-    with open('/home/mike/cache/test.shock', 'r', compressor='zstd', serializer='pickle') as db:
+    with open('/home/mike/cache/test.shock', 'r') as db:
         for i in range(10000):
             r1 = db['data'+str(i)]
 

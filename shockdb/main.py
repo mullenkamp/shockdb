@@ -114,28 +114,28 @@ class Lz4:
 
 class Shock(MutableMapping):
 
-    def __init__(self, file_path: str, flag: str = "r", map_size: int = 2**40, lock: bool = False, sync: bool = False, max_readers: int = 126, serializer = None, protocol: int = 5, compressor = None, compress_level: int = 1):
+    def __init__(self, file_path: str, flag: str = "r", sync: bool = False, lock: bool = True, serializer = None, protocol: int = 5, compressor = None, compress_level: int = 1, map_size: int = 2**40, **kwargs):
         """
 
         """
         ## Open lmdb
         if flag == "r":  # Open existing database for reading only (default)
-            env = lmdb.open(file_path, map_size=map_size, max_dbs=0, readonly=True, create=False, subdir=False, lock=lock, sync=False, max_readers=max_readers)
+            env = lmdb.open(file_path, map_size=map_size, max_dbs=0, readonly=True, create=False, subdir=False, lock=lock, sync=False, **kwargs)
             write = False
             fp_exists = True
         elif flag == "w":  # Open existing database for reading and writing
-            env = lmdb.open(file_path, map_size=map_size, max_dbs=0, readonly=False, create=False, subdir=False, lock=lock, sync=sync, max_readers=max_readers)
+            env = lmdb.open(file_path, map_size=map_size, max_dbs=0, readonly=False, create=False, subdir=False, lock=lock, sync=sync, **kwargs)
             write = True
             fp_exists = True
         elif flag == "c":  # Open database for reading and writing, creating it if it doesn't exist
             fp = pathlib.Path(file_path)
             fp_exists = fp.exists()
 
-            env = lmdb.open(file_path, map_size=map_size, max_dbs=0, readonly=False, create=True, subdir=False, lock=lock, sync=sync, max_readers=max_readers)
+            env = lmdb.open(file_path, map_size=map_size, max_dbs=0, readonly=False, create=True, subdir=False, lock=lock, sync=sync, **kwargs)
             write = True
         elif flag == "n":  # Always create a new, empty database, open for reading and writing
             utils.remove_db(file_path)
-            env = lmdb.open(file_path, map_size=map_size, max_dbs=0, readonly=False, create=True, subdir=False, lock=lock, sync=sync, max_readers=max_readers)
+            env = lmdb.open(file_path, map_size=map_size, max_dbs=0, readonly=False, create=True, subdir=False, lock=lock, sync=sync, **kwargs)
             write = True
             fp_exists = False
         else:
@@ -381,7 +381,7 @@ class Shock(MutableMapping):
 
 
 def open(
-    file_path: str, flag: str = "r", map_size: int = 2**40, lock: bool = False, sync: bool = False, max_readers: int = 126, serializer = None, protocol: int = 5, compressor = None, compress_level: int = 1):
+    file_path: str, flag: str = "r", sync: bool = False, lock: bool = True, serializer = None, protocol: int = 5, compressor = None, compress_level: int = 1, map_size: int = 2**40, **kwargs):
     """
     Open a persistent dictionary for reading and writing. On creation of the file, the encodings (serializer and compressor) will be written to the file. Any reads and new writes do not need to be opened with the encoding parameters. Currently, ShockDB uses pickle to serialize the encodings to the file.
 
@@ -393,19 +393,13 @@ def open(
     flag : str
         Flag associated with how the file is opened according to the dbm style. See below for details.
 
-    map_size : int
-        Maximum size database may grow to; used to size the memory mapping. If database grows larger than map_size, an exception will be raised and the user must close and reopen Environment. On 64-bit there is no penalty for making this huge (say 1TB). Must be <2GB on 32-bit.
-
-    lock : bool
-        If False, don’t do any locking. If concurrent access is anticipated, the caller must manage all concurrency itself. For proper operation the caller must enforce single-writer semantics, and must ensure that no readers are using old transactions while a writer is active. The simplest approach is to use an exclusive lock so that no readers may be active at all when a writer begins.
-
     sync : bool
         If False, don’t flush system buffers to disk when committing a transaction. This optimization means a system crash can corrupt the database or lose the last transactions if buffers are not yet flushed to disk.
 
         The risk is governed by how often the system flushes dirty buffers to disk and how often sync() is called. However, if the filesystem preserves write order, transactions exhibit ACI (atomicity, consistency, isolation) properties and only lose D (durability). I.e. database integrity is maintained, but a system crash may undo the final transactions.
 
-    max_readers : int
-        Maximum number of simultaneous read transactions. Can only be set by the first process to open an environment, as it affects the size of the lock file and shared memory area. Attempts to simultaneously start more than this many read transactions will fail.
+    lock : bool
+        If False, don’t do any locking. If concurrent access is anticipated, the caller must manage all concurrency itself. For proper operation the caller must enforce single-writer semantics, and must ensure that no readers are using old transactions while a writer is active. The simplest approach is to use an exclusive lock so that no readers may be active at all when a writer begins.
 
     serializer : str, class, or None
         The serializer to use to convert the input object to bytes. Currently, must be one of pickle, json, orjson, or None. If the objects can be serialized to json, then use orjson. It's super fast and you won't have the pickle issues.
@@ -422,6 +416,12 @@ def open(
 
     compress_level : int
         The compression level for the compressor.
+
+    map_size : int
+        Maximum size database may grow to; used to size the memory mapping. If database grows larger than map_size, an exception will be raised and the user must close and reopen Environment. On 64-bit there is no penalty for making this huge (say 1TB). Must be <2GB on 32-bit.
+
+    **kwargs:
+        Any kwargs that can be passed to the lmdb.Environment class: https://lmdb.readthedocs.io/en/release/#environment-class
 
     Returns
     -------
@@ -447,8 +447,12 @@ def open(
 
     """
 
-    return Shock(file_path, flag, map_size, lock, sync, max_readers, serializer, protocol, compressor, compress_level)
+    return Shock(file_path, flag, sync, lock, serializer, protocol, compressor, compress_level, map_size, **kwargs)
 
+
+
+# with open(os.path.join(tmp.name, 'test_file'), 'wb') as f:
+#           f.write(b'test')
 
 
 # for key, value in shock0.items():
