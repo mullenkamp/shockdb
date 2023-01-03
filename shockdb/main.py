@@ -41,8 +41,8 @@ except:
 # except:
 #     imports['numpy'] = False
 
-from . import utils
-# import utils
+# from . import utils
+import utils
 
 # logger = logging.getLogger(__name__)
 
@@ -72,6 +72,12 @@ class Orjson:
     def loads(obj):
         return orjson.loads(obj)
 
+
+class Str:
+    def dumps(obj):
+        return obj.encode()
+    def loads(obj):
+        return obj.decode()
 
 # class Numpy:
 #     def dumps(obj: np.ndarray) -> bytes:
@@ -114,10 +120,12 @@ class Lz4:
 
 class Shock(MutableMapping):
 
-    def __init__(self, file_path: str, flag: str = "r", sync: bool = False, lock: bool = True, serializer = None, protocol: int = 5, compressor = None, compress_level: int = 1, map_size: int = 2**40, **kwargs):
+    def __init__(self, file_path: str, flag: str = "r", sync: bool = False, lock: bool = True, serializer = None, protocol: int = 5, compressor = None, compress_level: int = 1, key_serializer = None, map_size: int = 2**40, **kwargs):
         """
 
         """
+        file_path = str(file_path)
+
         ## Open lmdb
         if flag == "r":  # Open existing database for reading only (default)
             env = lmdb.open(file_path, map_size=map_size, max_dbs=0, readonly=True, create=False, subdir=False, lock=lock, sync=False, **kwargs)
@@ -149,8 +157,9 @@ class Shock(MutableMapping):
             with env.begin(write=False, buffers=False) as txn:
                 self._serializer = pickle.loads(txn.get(b'00~._serializer'))
                 self._compressor = pickle.loads(txn.get(b'01~._compressor'))
+                self._key_serializer = pickle.loads(txn.get(b'02~._key_serializer'))
         else:
-            ## Serializer
+            ## Value Serializer
             if serializer is None:
                 self._serializer = None
             elif serializer == 'pickle':
@@ -166,6 +175,27 @@ class Shock(MutableMapping):
                 class_methods = dir(serializer)
                 if ('dumps' in class_methods) and ('loads' in class_methods):
                     self._serializer = serializer
+                else:
+                    raise ValueError('If a class is passed for a serializer, then it must have dumps and loads methods.')
+            else:
+                raise ValueError('serializer must be one of pickle, json, str, orjson, or a serializer class with dumps and loads methods.')
+
+            ## Key Serializer
+            if key_serializer is None:
+                self._key_serializer = None
+            elif key_serializer == 'pickle':
+                self._key_serializer = Pickle(protocol)
+            elif key_serializer == 'json':
+                self._key_serializer = Json
+            elif key_serializer == 'orjson':
+                if imports['orjson']:
+                    self._key_serializer = Orjson
+                else:
+                    raise ValueError('orjson could not be imported.')
+            elif inspect.isclass(key_serializer):
+                class_methods = dir(key_serializer)
+                if ('dumps' in class_methods) and ('loads' in class_methods):
+                    self._key_serializer = key_serializer
                 else:
                     raise ValueError('If a class is passed for a serializer, then it must have dumps and loads methods.')
             else:
@@ -199,24 +229,25 @@ class Shock(MutableMapping):
             with env.begin(write=True, buffers=False) as txn:
                 txn.put(b'00~._serializer', pickle.dumps(self._serializer, protocol))
                 txn.put(b'01~._compressor', pickle.dumps(self._compressor, protocol))
+                txn.put(b'02~._key_serializer', pickle.dumps(self._key_serializer, protocol))
             env.sync()
 
 
-    def info(self) -> dict:
-        """
-        Return some lmdb environment information.
+    # def info(self) -> dict:
+    #     """
+    #     Return some lmdb environment information.
 
-        Returns
-        -------
-        dict
-        """
-        return self.env.info()
+    #     Returns
+    #     -------
+    #     dict
+    #     """
+    #     return self.env.info()
 
-    def set_map_size(self, value: int) -> None:
-        """
-        Change the map size of the database by a value.
-        """
-        self.env.set_mapsize(value)
+    # def set_map_size(self, value: int) -> None:
+    #     """
+    #     Change the map size of the database by a value.
+    #     """
+    #     self.env.set_mapsize(value)
 
     def copy(self, file_path, compact=True):
         """
@@ -231,13 +262,21 @@ class Shock(MutableMapping):
         """
         self.env.copy(file_path, compact=compact)
 
-    def _pre_key(self, key: str) -> bytes:
+    def _pre_key(self, key) -> bytes:
 
-        return key.encode()
+        ## Serialize to bytes
+        if self._key_serializer is not None:
+            key = self._key_serializer.dumps(key)
 
-    def _post_key(self, key: bytes) -> str:
+        return key
 
-        return key.decode()
+    def _post_key(self, key: bytes):
+
+        ## Serialize from bytes
+        if self._key_serializer is not None:
+            key = self._key_serializer.loads(key)
+
+        return key
 
     def _pre_value(self, value) -> bytes:
 
@@ -381,7 +420,7 @@ class Shock(MutableMapping):
 
 
 def open(
-    file_path: str, flag: str = "r", sync: bool = False, lock: bool = True, serializer = None, protocol: int = 5, compressor = None, compress_level: int = 1, map_size: int = 2**40, **kwargs):
+    file_path: str, flag: str = "r", sync: bool = False, lock: bool = True, serializer = None, protocol: int = 5, compressor = None, compress_level: int = 1, key_serializer = None, map_size: int = 2**40, **kwargs):
     """
     Open a persistent dictionary for reading and writing. On creation of the file, the encodings (serializer and compressor) will be written to the file. Any reads and new writes do not need to be opened with the encoding parameters. Currently, ShockDB uses pickle to serialize the encodings to the file.
 
@@ -447,7 +486,7 @@ def open(
 
     """
 
-    return Shock(file_path, flag, sync, lock, serializer, protocol, compressor, compress_level, map_size, **kwargs)
+    return Shock(file_path, flag, sync, lock, serializer, protocol, compressor, compress_level, key_serializer, map_size, **kwargs)
 
 
 

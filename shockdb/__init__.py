@@ -1,5 +1,5 @@
-from shockdb.main import open
+from shockdb.main import open, Shock
 
-__version__ = "0.0.5"
+# __version__ = "0.0.8"
 
-__all__ = ["open", "__version__"]
+__all__ = ["open", "Shock"]

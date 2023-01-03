@@ -1,6 +1,8 @@
 ShockDB
 ==================================
 
+*WARNING* The lmdb backend does not seem to work properly in real world tests. Excessive CPU usage and data corruption seems to occur. Do not use this package (and probably not the python-lmdb package either). If you're using linux, then `shelflet <https://github.com/mullenkamp/shelflet>`_ is a good alternative. 
+
 Introduction
 ------------
 ShockDB uses `LMDB <http://www.lmdb.tech>`_ as the backend database, `python-lmdb <https://lmdb.readthedocs.io>`_ as the python bindings to the lmdb C library, and `lmdbm <https://github.com/Dobatymo/lmdb-python-dbm>`_ as a template to create a python key-value database in the style of `dbm <https://docs.python.org/3/library/dbm.html>`_ and `shelve <https://docs.python.org/3/library/shelve.html>`_. As such, the API uses all of the same python dictionary methods python programmers are used to.

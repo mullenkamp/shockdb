@@ -9,7 +9,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 # General parameters
 name = 'shockdb'
 main_package = 'shockdb'
-version = '0.0.7'
+version = '0.0.8'
 descrip = 'A python wrapper on lmdb for a simple dbm key-value database'
 
 # The below code is for readthedocs. To have sphinx/readthedocs interact with

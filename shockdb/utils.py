@@ -20,7 +20,7 @@ def move_cursor(txn):
     Move the cursor past the encodings.
     """
     cursor = txn.cursor()
-    cursor.set_key(b'01~._compressor')
+    cursor.set_key(b'02~._key_serializer')
     cursor.next()
 
     return cursor
