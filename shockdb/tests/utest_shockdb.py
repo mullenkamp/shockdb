@@ -501,7 +501,7 @@ with open('/home/mike/cache/test.shock', 'n', lock=False, compressor=Zstd, seria
 
 value = pickle.dumps(np.arange(0, 1000))
 def test_write_shelflet_none_none():
-    with open('/home/mike/cache/test.shelf', 'n', compressor=None, serializer=None) as db:
+    with open('/media/nvme1/cache/arete/test.shelf', 'n', compressor=None, serializer=None, key_serializer='str') as db:
         for i in range(10000):
             db['data'+str(i)] = value
 
@@ -521,17 +521,25 @@ def test_read_shelflet_zstd_pickle():
 
 
 
-db = open('/home/mike/cache/test.shelf', 'w')
+db = Arete('/media/nvme1/cache/arete/test.arete', 'r')
 
 
 
 
 
 
+import numpy as np
 
+value = pickle.dumps(np.arange(0, 1000))
+def test_write_shock_none_none():
+    with Arete('/media/nvme1/cache/arete/test.arete', 'n', compressor=None, serializer=None, key_serializer='str') as db:
+        for i in range(10000):
+            db['data'+str(i)] = value
 
-
-
+with Arete('/media/nvme1/cache/arete/test.arete', 'r') as db:
+    for i in range(10000):
+        print(i)
+        r1 = db['data'+str(i)]
 
 
 
