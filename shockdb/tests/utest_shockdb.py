@@ -19,6 +19,7 @@ import numpy as np
 import lmdb
 import pathlib
 import shockdb
+import booklet
 
 ############################################################
 ### Parameters
@@ -62,8 +63,6 @@ env1 = lmdb.open(file_path, map_size=map_size, max_dbs=0, readonly=False, create
 
 txn1 = env1.begin(write=True)
 
-txn1.put('results2'.encode(), pickle.dumps(results1.sel(height=10))
-txn1.commit()
 
 
 
@@ -501,7 +500,7 @@ with open('/home/mike/cache/test.shock', 'n', lock=False, compressor=Zstd, seria
 
 value = pickle.dumps(np.arange(0, 1000))
 def test_write_shelflet_none_none():
-    with open('/media/nvme1/cache/arete/test.shelf', 'n', compressor=None, serializer=None, key_serializer='str') as db:
+    with open('/media/nvme1/cache/arete/test.shelf', 'n', value_serializer=None, key_serializer='str') as db:
         for i in range(10000):
             db['data'+str(i)] = value
 
@@ -530,16 +529,153 @@ db = Arete('/media/nvme1/cache/arete/test.arete', 'r')
 
 import numpy as np
 
-value = pickle.dumps(np.arange(0, 1000))
-def test_write_shock_none_none():
-    with Arete('/media/nvme1/cache/arete/test.arete', 'n', compressor=None, serializer=None, key_serializer='str') as db:
+value = np.arange(0, 1000)
+def test_write_booklet_none_none():
+    with open('/home/mike/cache/test.blt', 'n', key_serializer='uint4', value_serializer='numpy_int2_zstd') as db:
         for i in range(10000):
-            db['data'+str(i)] = value
+            value = np.arange(0, i+1)
+            db[i] = value
 
-with Arete('/media/nvme1/cache/arete/test.arete', 'r') as db:
-    for i in range(10000):
-        print(i)
-        r1 = db['data'+str(i)]
+def test_read_booklet():
+    with open('/home/mike/cache/test.blt', 'r') as db:
+        for i in range(10000):
+            r1 = db['data'+str(i)]
+
+
+def test_read_booklet_iter():
+    with booklet.open('/home/mike/cache/test.book', 'r') as db:
+        for i, v in db.items():
+            r1 = v
+
+
+key1 = 3050201
+key2 = 7244542
+db = open('/home/mike/cache/test.blt')
+db[key1]
+
+
+with open('/home/mike/cache/test.blt', 'n', key_serializer='uint4', value_serializer='gpd_zstd', n_buckets=1600) as f:
+    for way_id, branches in catches_minor_dict.items():
+        if way_id in [key1, key2]:
+            print(way_id)
+            f[way_id] = branches
+
+f1 = db[key]
+for k in f1.nzsegment:
+    if k in catches_minor_dict:
+        d
+
+
+
+
+import orjson
+import zstandard as zstd
+
+class OrjsonZstd:
+  def dumps(obj) -> bytes:
+      return zstd.compress(orjson.dumps(obj, option=orjson.OPT_NON_STR_KEYS | orjson.OPT_OMIT_MICROSECONDS | orjson.OPT_SERIALIZE_NUMPY))
+  def loads(obj: bytes):
+      return orjson.loads(zstd.decompress(obj))
+
+with booklet.open('test.book', 'n', value_serializer=OrjsonZstd, key_serializer='str') as db:
+  db['big_test'] = list(range(1000000))
+
+with booklet.open('test.book', 'r') as db:
+  big_test_data = db['big_test']
+
+
+
+start = time()
+with open('/media/nvme1/git/nzrec/data/node.blt') as node:
+    for k in node.keys():
+        r1 = node[k]
+end = time()
+print(end - start)
+
+
+
+node = booklet.open('/media/nvme1/git/nzrec/data/node.arete')
+
+value = pickle.dumps(np.arange(0, 110))
+
+start = time()
+with open('/media/nvme1/data/NIWA/test/test_file.tmp', 'wb', buffering=500000) as f:
+    for i in range(50000):
+        f.write(value)
+
+end = time()
+print(end - start)
+
+
+def write_buffered():
+    with open('/media/nvme1/data/NIWA/test/test_file.tmp', 'wb', buffering=500000) as f:
+        for i in range(50000):
+            f.write(value)
+
+
+def write_unbuffered():
+    with open('/media/nvme1/data/NIWA/test/test_file.tmp', 'wb', buffering=0) as f:
+        for i in range(50000):
+            f.write(value)
+
+
+value_len = len(value)
+def write_buffered_mmap():
+    with open('/media/nvme1/data/NIWA/test/test_file.tmp', 'wb', buffering=500000) as f:
+        f.write(value)
+    with open('/media/nvme1/data/NIWA/test/test_file.tmp', 'r+b', buffering=500000) as f:
+        mm = mmap.mmap(f.fileno(), 0)
+        size = value_len
+        for i in range(50000):
+            size += value_len
+            mm.resize(size)
+            mm.write(value)
+
+
+
+with open("hello.txt", "wb") as f:
+    f.write(b"Hello Python\n")
+
+with open("hello.txt", "r+b") as f:
+    with mmap.mmap(f.fileno(), 0) as mm:
+        print(mm.readline())  # prints b"Hello Python!\n"
+        print(mm[:5])  # prints b"Hello"
+        mm.seek(5)
+        mm.write(b" world!\n")
+        mm.seek(0)
+        print(mm.readline())  # prints b"Hello world!\n”
+        mm.resize(17)
+        mm.move(10, 6, len(b'world!\n'))
+        mm[6:10] = b'big '
+        print(mm[:])  # prints b'Hello big world!\n'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
